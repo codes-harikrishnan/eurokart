@@ -32,7 +32,7 @@ public class AppConfiguration {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
-        corsConfiguration.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONAL","PATCH"));
+        corsConfiguration.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS","PATCH"));
         corsConfiguration.setAllowCredentials(true);
         corsConfiguration.setAllowedOrigins(List.of("http://localhost:3000"));
         corsConfiguration.setAllowedHeaders(List.of("*"));
