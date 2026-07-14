@@ -17,4 +17,15 @@ public class GlobalExceptionHandler {
                 .createdAt(LocalDateTime.now())
                 .build();
     }
+
+    @ExceptionHandler(ConflictException.class)
+    public ApiError handleConfictException (ConflictException exception) {
+        return ApiError.builder()
+                .status(HttpStatus.CONFLICT.value())
+                .message(exception.getMessage())
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+
+
 }
