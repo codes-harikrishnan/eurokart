@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: eurokart
+  datasource:
+    url: jdbc:postgresql://localhost:5433/eurokartdb
+    username: eurokart_user
+    password: eurokart_pass
