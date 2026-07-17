@@ -1,13 +1,20 @@
 package com.harikrishnan.eurokart.category.domain;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "category")
 public class Category {
 
@@ -15,19 +22,17 @@ public class Category {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private  Long id;
 
-    @Column(name = "name")
+    @Column(name = "name", nullable = false)
     private  String name;
 
-    @Column(name = "description")
+    @Column(name = "description", nullable = false)
     private  String description;
 
     @CreatedDate
-    @Column(name = "createdDateTime")
-    private LocalDateTime createdDateTime;
+    private LocalDateTime createdAt;
 
     @LastModifiedDate
-    @Column(name = "updatedDateTime")
-    private LocalDateTime updatedDateTime;
+    private LocalDateTime updatedAt;
 
     @Builder
     public Category(String name, String description) {

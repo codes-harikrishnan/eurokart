@@ -7,7 +7,7 @@ CREATE TABLE product
     stock       INTEGER                                 NOT NULL,
     category_id BIGINT                                  NOT NULL,
     created_at  TIMESTAMP WITHOUT TIME ZONE,
-    update_at   TIMESTAMP WITHOUT TIME ZONE,
+    updated_at  TIMESTAMP WITHOUT TIME ZONE,
     CONSTRAINT pk_product PRIMARY KEY (id)
 );
 
