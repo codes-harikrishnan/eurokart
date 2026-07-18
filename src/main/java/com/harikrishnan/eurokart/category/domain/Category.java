@@ -40,4 +40,9 @@ public class Category {
         this.description = description;
     }
 
+    public Category updateDetails (String name, String description) {
+        this.name = name;
+        this.description = description;
+        return this;
+    }
 }
