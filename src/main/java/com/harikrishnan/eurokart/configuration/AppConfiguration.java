@@ -22,7 +22,7 @@ public class AppConfiguration {
                 sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(c -> c.configurationSource(corsConfigurationSource()))
-                .authorizeHttpRequests(auth -> auth.requestMatchers("/category/**").permitAll().anyRequest().authenticated());
+                .authorizeHttpRequests(auth -> auth.requestMatchers("/category/**","/products/**").permitAll().anyRequest().authenticated());
 
         return  httpSecurity.build();
     }
