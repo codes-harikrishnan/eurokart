@@ -1,6 +1,6 @@
 package com.harikrishnan.eurokart.order.domain;
 
-import com.harikrishnan.eurokart.product.Product;
+import com.harikrishnan.eurokart.product.domain.Product;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

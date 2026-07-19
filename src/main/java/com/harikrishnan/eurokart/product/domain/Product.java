@@ -1,4 +1,4 @@
-package com.harikrishnan.eurokart.product;
+package com.harikrishnan.eurokart.product.domain;
 
 import com.harikrishnan.eurokart.category.domain.Category;
 import jakarta.persistence.*;
