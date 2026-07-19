@@ -22,7 +22,7 @@ public class ProductResponseDto implements Serializable {
     String description;
     BigDecimal price;
     Integer stock;
-    Category category;
+    Long categoryId;
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
 }

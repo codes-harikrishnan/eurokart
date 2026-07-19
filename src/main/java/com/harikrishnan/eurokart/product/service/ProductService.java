@@ -11,8 +11,12 @@ import com.harikrishnan.eurokart.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -54,12 +58,76 @@ public class ProductService {
                 .description(savedProduct.getDescription())
                 .price(savedProduct.getPrice())
                 .stock(savedProduct.getStock())
-                .category(savedProduct.getCategory())
+                .categoryId(savedProduct.getCategory().getId())
                 .createdAt(savedProduct.getCreatedAt())
                 .updatedAt(savedProduct.getUpdatedAt())
                 .build();
 
     }
 
+    @Transactional(readOnly = true)
+    public List<ProductResponseDto> getAllProducts () {
+
+        log.info("Initiated service method to get all products.");
+        return productRepository.findAll().stream().map(product -> ProductResponseDto.builder()
+                .id(product.getId())
+                .name(product.getName())
+                .description(product.getDescription())
+                .price(product.getPrice())
+                .stock(product.getStock())
+                .categoryId(product.getCategory().getId())
+                .createdAt(product.getCreatedAt())
+                .updatedAt(product.getUpdatedAt())
+                .build()).toList();
+
+    }
+
+    @Transactional(readOnly = true)
+    @Cacheable(value = "products", key = "#id")
+    public ProductResponseDto getProductById (Long id) {
+        log.info("Initiated service method to get product with id {}.", id);
+       Product product =  productRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Unable to find product with id:" + id));
+        log.info("Product found with id {}.", id);
+       return ProductResponseDto.builder()
+               .id(product.getId())
+               .name(product.getName())
+               .description(product.getDescription())
+               .price(product.getPrice())
+               .stock(product.getStock())
+               .categoryId(product.getCategory().getId())
+               .createdAt(product.getCreatedAt())
+               .updatedAt(product.getUpdatedAt())
+               .build();
+    }
+
+    @Transactional
+    public ProductResponseDto updateProduct ( Long id,ProductRequestDto productRequestDto) {
+        log.info("Initiated service method to update product with id {}.", id);
+        Product product = productRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Unable to find product with id:" + id));
+        log.info("Product found with id {}.", id);
+
+        Category category = categoryRepository.findById(productRequestDto.getCategoryId()).orElseThrow(() -> new ResourceNotFoundException("Unable to find category with id:" + productRequestDto.getCategoryId()));
+        product.updateProduct(productRequestDto.getName(), productRequestDto.getDescription(), productRequestDto.getPrice(), productRequestDto.getStock(), category);
+        log.info("Product updated with id {}.", id);
+
+        return ProductResponseDto.builder()
+                .id(product.getId())
+                .name(product.getName())
+                .description(product.getDescription())
+                .price(product.getPrice())
+                .stock(product.getStock())
+                .categoryId(product.getCategory().getId())
+                .createdAt(product.getCreatedAt())
+                .updatedAt(product.getUpdatedAt())
+                .build();
+    }
+
+    @Transactional
+    public void deleteProduct (Long id) {
+        log.info("Initiated service method to delete product with id {}.", id);
+        Product product = productRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(("Unable to find product with id:" + id)));
+        productRepository.delete(product);
+        log.info("Product deleted with id {}.", id);
+    }
 
 }
