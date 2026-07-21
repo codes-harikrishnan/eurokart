@@ -2,11 +2,16 @@ package com.harikrishnan.eurokart.category.controller;
 import com.harikrishnan.eurokart.category.dto.CategoryRequestDto;
 import com.harikrishnan.eurokart.category.dto.CategoryResponseDto;
 import com.harikrishnan.eurokart.category.service.CategoryService;
+import com.harikrishnan.eurokart.configuration.JWTFilter;
 import com.harikrishnan.eurokart.exception.ResourceNotFoundException;
+import com.harikrishnan.eurokart.util.JWTService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -19,12 +24,20 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(CategoryController.class)
+@WebMvcTest(value = CategoryController.class, excludeFilters = {
+        @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JWTFilter.class)
+})
 public class CategoryControllerTest {
 
 
     @MockitoBean
     private CategoryService categoryService;
+
+    @MockitoBean
+    private JWTService jwtService;
+
+    @MockitoBean
+    private UserDetailsService userDetailsService;
 
     @Autowired
     private MockMvc mockMvc;
