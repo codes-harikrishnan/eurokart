@@ -33,6 +33,17 @@ public class GlobalExceptionHandler {
                 .build();
     }
 
+
+    @ExceptionHandler(InsufficientStockException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ApiError handleInsuffcientStockException ( Exception exception) {
+        return ApiError.builder()
+                .status(HttpStatus.CONFLICT.value())
+                .message(exception.getMessage())
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleMethodArgumentNotValidException(MethodArgumentNotValidException exception) {

@@ -49,4 +49,10 @@ public class Order {
         this.orderStatus = orderStatus;
         this.totalAmount = totalAmount;
     }
+
+    public Order updateStatus (OrderStatus newOrderStatus) {
+        this.orderStatus = newOrderStatus;
+        return this;
+    }
+
 }

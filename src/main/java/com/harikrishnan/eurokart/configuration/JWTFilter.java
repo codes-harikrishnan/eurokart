@@ -54,7 +54,7 @@ public class JWTFilter extends OncePerRequestFilter {
                 filterChain.doFilter(request,response);
             }
         } catch (Exception e) {
-           log.error("Error in processing user details");
+            log.error("Error in processing user details: {}", e.getMessage(), e);
         }
 
 

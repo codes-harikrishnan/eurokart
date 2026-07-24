@@ -1,6 +1,7 @@
 package com.harikrishnan.eurokart.product.domain;
 
 import com.harikrishnan.eurokart.category.domain.Category;
+import com.harikrishnan.eurokart.exception.InsufficientStockException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -64,5 +65,12 @@ public class Product {
         return this;
     }
 
+    public Product deductStock ( Integer quantity) {
+        if(quantity > this.stock) {
+            throw new InsufficientStockException("Not sufficient stock available for the product with id" + this.getId());
+        }
+        this.stock = this.stock - quantity;
+        return this;
+    }
 
 }
