@@ -119,7 +119,7 @@ public class OrderService {
                 .totalAmount(order.getTotalAmount())
                 .id(order.getId())
                 .updatedAt(LocalDateTime.now())
-                .message("Order status updated to" + order.getOrderStatus())
+                .message("Order status updated to " + order.getOrderStatus())
                 .build();
     }
 
@@ -153,7 +153,7 @@ public class OrderService {
                 .totalAmount(order.getTotalAmount())
                 .id(order.getId())
                 .updatedAt(LocalDateTime.now())
-                .message("Order status updated to" + order.getOrderStatus())
+                .message("Order status updated to " + order.getOrderStatus())
                 .build();
     }
 

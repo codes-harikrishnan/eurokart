@@ -13,7 +13,6 @@ import com.harikrishnan.eurokart.order.repository.OrderRepository;
 import com.harikrishnan.eurokart.product.domain.Product;
 import com.harikrishnan.eurokart.product.repository.ProductRepository;
 import com.harikrishnan.eurokart.user.domain.User;
-import com.harikrishnan.eurokart.user.repository.UserRepository;
 import com.harikrishnan.eurokart.util.NotificationService;
 import com.harikrishnan.eurokart.util.SecurityUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -244,7 +243,7 @@ public class OrderServiceTest {
         assertThat(orderStatusResponseDto.getId()).isEqualTo(1L);
         assertThat(orderStatusResponseDto.getStatus()).isEqualTo(orderRequestStatusUpdateDto.getStatus());
         assertThat(orderStatusResponseDto.getTotalAmount()).isEqualTo(order.getTotalAmount());
-        assertThat(orderStatusResponseDto.getMessage()).isEqualTo("Order status updated to" + order.getOrderStatus());
+        assertThat(orderStatusResponseDto.getMessage()).isEqualTo("Order status updated to " + order.getOrderStatus());
     }
 
     @Test
@@ -361,7 +360,7 @@ public class OrderServiceTest {
         assertThat(orderStatusResponseDto.getId()).isEqualTo(1L);
         assertThat(orderStatusResponseDto.getStatus()).isEqualTo(OrderStatus.CANCELLED);
         assertThat(orderStatusResponseDto.getTotalAmount()).isEqualTo(order.getTotalAmount());
-        assertThat(orderStatusResponseDto.getMessage()).isEqualTo("Order status updated to" + order.getOrderStatus());
+        assertThat(orderStatusResponseDto.getMessage()).isEqualTo("Order status updated to " + order.getOrderStatus());
 
     }
 
@@ -434,7 +433,7 @@ public class OrderServiceTest {
         ReflectionTestUtils.setField(anotherUser,"id",2L);
 
         Order order =  Order.builder()
-                .orderStatus(OrderStatus.CONFIRMED)
+                .orderStatus(OrderStatus.PENDING)
                 .totalAmount(BigDecimal.valueOf(200L))
                 .user(user)
                 .build();
