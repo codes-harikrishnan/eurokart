@@ -1,13 +1,12 @@
 package com.harikrishnan.eurokart.order.service;
 import com.harikrishnan.eurokart.category.domain.Category;
+import com.harikrishnan.eurokart.exception.ConflictException;
 import com.harikrishnan.eurokart.exception.InsufficientStockException;
 import com.harikrishnan.eurokart.exception.ResourceNotFoundException;
+import com.harikrishnan.eurokart.exception.UnAuthorizedException;
 import com.harikrishnan.eurokart.order.domain.Order;
 import com.harikrishnan.eurokart.order.domain.OrderItem;
-import com.harikrishnan.eurokart.order.dto.OrderItemRequestDto;
-import com.harikrishnan.eurokart.order.dto.OrderItemResponseDto;
-import com.harikrishnan.eurokart.order.dto.OrderRequestDto;
-import com.harikrishnan.eurokart.order.dto.OrderResponseDto;
+import com.harikrishnan.eurokart.order.dto.*;
 import com.harikrishnan.eurokart.order.enums.OrderStatus;
 import com.harikrishnan.eurokart.order.repository.OrderItemRepository;
 import com.harikrishnan.eurokart.order.repository.OrderRepository;
@@ -16,6 +15,7 @@ import com.harikrishnan.eurokart.product.repository.ProductRepository;
 import com.harikrishnan.eurokart.user.domain.User;
 import com.harikrishnan.eurokart.user.repository.UserRepository;
 import com.harikrishnan.eurokart.util.NotificationService;
+import com.harikrishnan.eurokart.util.SecurityUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,7 +53,7 @@ public class OrderServiceTest {
     private ProductRepository productRepository;
 
     @Mock
-    private UserRepository userRepository;
+    private SecurityUtils securityUtils;
 
     @Mock
     private NotificationService notificationService;
@@ -124,7 +124,7 @@ public class OrderServiceTest {
                 .build();
 
 
-        when(userRepository.findUserByEmail(any(String.class))).thenReturn(user);
+        when(securityUtils.getCurrentUser()).thenReturn(user);
         when(productRepository.findById(any(Long.class))).thenReturn(Optional.of(product));
         when(orderRepository.save(any(Order.class))).thenReturn(order);
         when(orderItemRepository.save(any(OrderItem.class))).thenReturn(orderItem);
@@ -153,7 +153,7 @@ public class OrderServiceTest {
                                 .build()
                 ))
                 .build();
-        when(userRepository.findUserByEmail(any(String.class))).thenReturn(null);
+        when(securityUtils.getCurrentUser()).thenThrow(new ResourceNotFoundException("Unable to find user with email"));
         assertThatThrownBy(() -> orderService.placeOrder(orderRequestDto)).isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -173,7 +173,7 @@ public class OrderServiceTest {
                 .email("test@gmail.com")
                 .passwordHash("ABCD1234")
                 .build();
-        when(userRepository.findUserByEmail(any(String.class))).thenReturn(user);
+        when(securityUtils.getCurrentUser()).thenReturn(user);
         when(productRepository.findById(any(Long.class))).thenReturn(Optional.empty());
         assertThatThrownBy(() -> orderService.placeOrder(orderRequestDto)).isInstanceOf(ResourceNotFoundException.class);
 
@@ -208,9 +208,242 @@ public class OrderServiceTest {
                 .stock(1)
                 .category(category)
                 .build();
-        when(userRepository.findUserByEmail(any(String.class))).thenReturn(user);
+        when(securityUtils.getCurrentUser()).thenReturn(user);
         ReflectionTestUtils.setField(product,"id",1L);
         when(productRepository.findById(any(Long.class))).thenReturn(Optional.of(product));
         assertThatThrownBy(() -> orderService.placeOrder(orderRequestDto)).isInstanceOf(InsufficientStockException.class);
     }
+
+    @Test
+    void updateOrderStatus_WithValidRequest_ShouldReturnUpdatedOrderResponseDto () {
+
+        OrderRequestStatusUpdateDto orderRequestStatusUpdateDto = OrderRequestStatusUpdateDto.builder()
+                .status(OrderStatus.CONFIRMED)
+                .build();
+
+        User user = User.builder()
+                .role("USER")
+                .email("test@gmail.com")
+                .passwordHash("ABCD1234")
+                .build();
+
+        ReflectionTestUtils.setField(user,"id",
+                1L);
+
+        Order order =  Order.builder()
+                .orderStatus(OrderStatus.PENDING)
+                .totalAmount(BigDecimal.valueOf(200L))
+                .user(user)
+                .build();
+
+        ReflectionTestUtils.setField(order,"id",1L);
+
+        when(orderRepository.findById(any(Long.class))).thenReturn(Optional.of(order));
+
+        OrderStatusResponseDto orderStatusResponseDto = orderService.updateOrderStatus(orderRequestStatusUpdateDto, 1L);
+        assertThat(orderStatusResponseDto.getId()).isEqualTo(1L);
+        assertThat(orderStatusResponseDto.getStatus()).isEqualTo(orderRequestStatusUpdateDto.getStatus());
+        assertThat(orderStatusResponseDto.getTotalAmount()).isEqualTo(order.getTotalAmount());
+        assertThat(orderStatusResponseDto.getMessage()).isEqualTo("Order status updated to" + order.getOrderStatus());
+    }
+
+    @Test
+    void updateOrderStatus_WithInvalidOrderId_ShouldThrowResourceNotFoundException () {
+
+        OrderRequestStatusUpdateDto orderRequestStatusUpdateDto = OrderRequestStatusUpdateDto.builder()
+                .status(OrderStatus.CONFIRMED)
+                .build();
+
+        when(orderRepository.findById(any(Long.class))).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.updateOrderStatus(orderRequestStatusUpdateDto, 1L)).isInstanceOf(ResourceNotFoundException.class);
+
+    }
+
+    @Test
+    void updateOrderStatus_WithDeliveredOrder_ShouldThrowConflictException () {
+        OrderRequestStatusUpdateDto orderRequestStatusUpdateDto = OrderRequestStatusUpdateDto.builder()
+                .status(OrderStatus.CONFIRMED)
+                .build();
+
+
+        User user = User.builder()
+                .role("USER")
+                .email("test@gmail.com")
+                .passwordHash("ABCD1234")
+                .build();
+
+        Order order =  Order.builder()
+                .orderStatus(OrderStatus.DELIVERED)
+                .totalAmount(BigDecimal.valueOf(200L))
+                .user(user)
+                .build();
+
+        ReflectionTestUtils.setField(order,"id",1L);
+
+        when(orderRepository.findById(any(Long.class))).thenReturn(Optional.of(order));
+        assertThatThrownBy(() -> orderService.updateOrderStatus(orderRequestStatusUpdateDto, 1L)).isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    void updateOrderStatus_WithCancelledOrder_ShouldThrowConflictException () {
+        OrderRequestStatusUpdateDto orderRequestStatusUpdateDto = OrderRequestStatusUpdateDto.builder()
+                .status(OrderStatus.CONFIRMED)
+                .build();
+
+
+        User user = User.builder()
+                .role("USER")
+                .email("test@gmail.com")
+                .passwordHash("ABCD1234")
+                .build();
+
+        Order order =  Order.builder()
+                .orderStatus(OrderStatus.CANCELLED)
+                .totalAmount(BigDecimal.valueOf(200L))
+                .user(user)
+                .build();
+
+        ReflectionTestUtils.setField(order,"id",1L);
+
+        when(orderRepository.findById(any(Long.class))).thenReturn(Optional.of(order));
+        assertThatThrownBy(() -> orderService.updateOrderStatus(orderRequestStatusUpdateDto, 1L)).isInstanceOf(ConflictException.class);
+    }
+
+
+    @Test
+    void updateOrderStatus_WithCancelRequest_ShouldThrowConflictException () {
+        OrderRequestStatusUpdateDto orderRequestStatusUpdateDto = OrderRequestStatusUpdateDto.builder()
+                .status(OrderStatus.CANCELLED)
+                .build();
+
+
+        User user = User.builder()
+                .role("USER")
+                .email("test@gmail.com")
+                .passwordHash("ABCD1234")
+                .build();
+
+        Order order =  Order.builder()
+                .orderStatus(OrderStatus.CONFIRMED)
+                .totalAmount(BigDecimal.valueOf(200L))
+                .user(user)
+                .build();
+
+        ReflectionTestUtils.setField(order,"id",1L);
+
+        when(orderRepository.findById(any(Long.class))).thenReturn(Optional.of(order));
+        assertThatThrownBy(() -> orderService.updateOrderStatus(orderRequestStatusUpdateDto, 1L)).isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    void cancelOrder_WithValidRequest_ShouldReturnCancelledOrderResponseDto () {
+             User user = User.builder()
+                .role("USER")
+                .email("test@gmail.com")
+                .passwordHash("ABCD1234")
+                .build();
+
+        ReflectionTestUtils.setField(user,"id",1L);
+
+        Order order =  Order.builder()
+                .orderStatus(OrderStatus.PENDING)
+                .totalAmount(BigDecimal.valueOf(200L))
+                .user(user)
+                .build();
+
+        ReflectionTestUtils.setField(order,"id",1L);
+
+        when(securityUtils.getCurrentUser()).thenReturn(user);
+        when(orderRepository.findById(any(Long.class))).thenReturn(Optional.of(order));
+
+        OrderStatusResponseDto orderStatusResponseDto = orderService.cancelOrderStatus(1L);
+        assertThat(orderStatusResponseDto.getId()).isEqualTo(1L);
+        assertThat(orderStatusResponseDto.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(orderStatusResponseDto.getTotalAmount()).isEqualTo(order.getTotalAmount());
+        assertThat(orderStatusResponseDto.getMessage()).isEqualTo("Order status updated to" + order.getOrderStatus());
+
+    }
+
+
+    @Test
+    void cancelOrder_WithInvalidOrderId_ShouldThrowResourceNotFoundException () {
+
+        User user = User.builder()
+                .role("USER")
+                .email("test@gmail.com")
+                .passwordHash("ABCD1234")
+                .build();
+
+        ReflectionTestUtils.setField(user,"id",1L);
+
+        Order order =  Order.builder()
+                .orderStatus(OrderStatus.CONFIRMED)
+                .totalAmount(BigDecimal.valueOf(200L))
+                .user(user)
+                .build();
+
+        ReflectionTestUtils.setField(order,"id",1L);
+
+        when(securityUtils.getCurrentUser()).thenReturn(user);
+        when(orderRepository.findById(any(Long.class))).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> orderService.cancelOrderStatus(1L)).isInstanceOf(ResourceNotFoundException.class);
+
+    }
+
+    @Test
+    void cancelOrder_WithNonPendingOrder_ShouldThrowConflictException () {
+        User user = User.builder()
+                .role("USER")
+                .email("test@gmail.com")
+                .passwordHash("ABCD1234")
+                .build();
+
+        ReflectionTestUtils.setField(user,"id",1L);
+
+        Order order =  Order.builder()
+                .orderStatus(OrderStatus.CONFIRMED)
+                .totalAmount(BigDecimal.valueOf(200L))
+                .user(user)
+                .build();
+
+        ReflectionTestUtils.setField(order,"id",1L);
+
+        when(securityUtils.getCurrentUser()).thenReturn(user);
+        when(orderRepository.findById(any(Long.class))).thenReturn(Optional.of(order));
+        assertThatThrownBy(() -> orderService.cancelOrderStatus(1L)).isInstanceOf(ConflictException.class);
+    }
+
+
+    @Test
+    void cancelOrder_WithDifferentUser_ShouldThrowUnauthorizedException () {
+        User user = User.builder()
+                .role("USER")
+                .email("test@gmail.com")
+                .passwordHash("ABCD1234")
+                .build();
+
+        ReflectionTestUtils.setField(user,"id",1L);
+
+        User anotherUser = User.builder()
+                .role("USER")
+                .email("test@gmail.com")
+                .passwordHash("ABCD1234")
+                .build();
+
+        ReflectionTestUtils.setField(anotherUser,"id",2L);
+
+        Order order =  Order.builder()
+                .orderStatus(OrderStatus.CONFIRMED)
+                .totalAmount(BigDecimal.valueOf(200L))
+                .user(user)
+                .build();
+
+        ReflectionTestUtils.setField(order,"id",1L);
+
+        when(securityUtils.getCurrentUser()).thenReturn(anotherUser);
+        when(orderRepository.findById(any(Long.class))).thenReturn(Optional.of(order));
+        assertThatThrownBy(() -> orderService.cancelOrderStatus(1L)).isInstanceOf(UnAuthorizedException.class);
+    }
+
 }

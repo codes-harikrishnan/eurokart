@@ -1,6 +1,8 @@
 package com.harikrishnan.eurokart.exception;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -59,6 +61,30 @@ public class GlobalExceptionHandler {
                    .errors(fieldErrors)
                    .createdAt(LocalDateTime.now())
                    .build();
+    }
+
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    @ExceptionHandler(UnAuthorizedException.class)
+    public ResponseEntity<ApiError> handleUnAuthorizedException (Exception exception) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                ApiError.builder()
+                        .status(HttpStatus.UNAUTHORIZED.value())
+                        .message(exception.getMessage())
+                        .createdAt(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleHttpMessageNotReadableHandler (Exception exception) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                ApiError.builder()
+                        .status(HttpStatus.BAD_REQUEST.value())
+                        .createdAt(LocalDateTime.now())
+                        .message("Invalid value provided. Accepted values are: PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED")
+                        .build()
+        );
     }
 
 
