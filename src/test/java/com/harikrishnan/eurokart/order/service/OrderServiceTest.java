@@ -23,6 +23,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.MDC;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import static org.mockito.Mockito.eq;
@@ -33,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -443,6 +449,104 @@ public class OrderServiceTest {
         when(securityUtils.getCurrentUser()).thenReturn(anotherUser);
         when(orderRepository.findById(any(Long.class))).thenReturn(Optional.of(order));
         assertThatThrownBy(() -> orderService.cancelOrderStatus(1L)).isInstanceOf(UnAuthorizedException.class);
+    }
+
+    @Test
+    void getOrders_WithNoFilters_ShouldReturnPageOfOrders () {
+        User user = User.builder()
+                .role("USER")
+                .email("test@gmail.com")
+                .passwordHash("ABCD1234")
+                .build();
+
+        ReflectionTestUtils.setField(user,"id",1L);
+
+        OrderRequestFilterDto orderRequestFilterDto = OrderRequestFilterDto.builder().build();
+
+        when(securityUtils.getCurrentUser()).thenReturn(user);
+
+        Order order =  Order.builder()
+                .orderStatus(OrderStatus.PENDING)
+                .totalAmount(BigDecimal.valueOf(200L))
+                .user(user)
+                .build();
+
+        ReflectionTestUtils.setField(order,"id",1L);
+        Pageable pageable = PageRequest.of(1, 10);
+        when(orderRepository.findAll(any(Specification.class),any(Pageable.class))).thenReturn(new PageImpl(List.of(order)));
+
+        Page<OrderResponseDto> ordersResponseDtos = orderService.getOrders(pageable,orderRequestFilterDto);
+        OrderResponseDto orderResponseDto = ordersResponseDtos.get().findFirst().get();
+        assertThat(orderResponseDto.getUserId()).isEqualTo(1L);
+        assertThat(orderResponseDto.getStatus()).isEqualTo(order.getOrderStatus());
+        assertThat(orderResponseDto.getTotalAmount()).isEqualTo(order.getTotalAmount());
+    }
+
+    @Test
+    void getOrders_WithStatusFilter_ShouldReturnFilteredOrders () {
+        User user = User.builder()
+                .role("USER")
+                .email("test@gmail.com")
+                .passwordHash("ABCD1234")
+                .build();
+
+        ReflectionTestUtils.setField(user,"id",1L);
+
+        OrderRequestFilterDto orderRequestFilterDto = OrderRequestFilterDto.builder()
+                .orderStatus(OrderStatus.PENDING)
+                .build();
+
+        when(securityUtils.getCurrentUser()).thenReturn(user);
+
+        Order order =  Order.builder()
+                .orderStatus(OrderStatus.PENDING)
+                .totalAmount(BigDecimal.valueOf(200L))
+                .user(user)
+                .build();
+
+        ReflectionTestUtils.setField(order,"id",1L);
+        Pageable pageable = PageRequest.of(1, 10);
+        when(orderRepository.findAll(any(Specification.class),any(Pageable.class))).thenReturn(new PageImpl(List.of(order)));
+
+        Page<OrderResponseDto> ordersResponseDtos = orderService.getOrders(pageable,orderRequestFilterDto);
+        OrderResponseDto orderResponseDto = ordersResponseDtos.get().findFirst().get();
+        assertThat(orderResponseDto.getUserId()).isEqualTo(1L);
+        assertThat(orderResponseDto.getStatus()).isEqualTo(order.getOrderStatus());
+        assertThat(orderResponseDto.getTotalAmount()).isEqualTo(order.getTotalAmount());
+    }
+
+    @Test
+    void getOrders_WithDateRangeFilter_ShouldReturnFilteredOrders () {
+        User user = User.builder()
+                .role("USER")
+                .email("test@gmail.com")
+                .passwordHash("ABCD1234")
+                .build();
+
+        ReflectionTestUtils.setField(user,"id",1L);
+
+        OrderRequestFilterDto orderRequestFilterDto = OrderRequestFilterDto.builder()
+                .fromDate(LocalDate.of(2026,7,20))
+                .toDate(LocalDate.of(2026,7,26))
+                .build();
+
+        when(securityUtils.getCurrentUser()).thenReturn(user);
+
+        Order order =  Order.builder()
+                .orderStatus(OrderStatus.PENDING)
+                .totalAmount(BigDecimal.valueOf(200L))
+                .user(user)
+                .build();
+
+        ReflectionTestUtils.setField(order,"id",1L);
+        Pageable pageable = PageRequest.of(1, 10);
+        when(orderRepository.findAll(any(Specification.class),any(Pageable.class))).thenReturn(new PageImpl(List.of(order)));
+
+        Page<OrderResponseDto> ordersResponseDtos = orderService.getOrders(pageable,orderRequestFilterDto);
+        OrderResponseDto orderResponseDto = ordersResponseDtos.get().findFirst().get();
+        assertThat(orderResponseDto.getUserId()).isEqualTo(1L);
+        assertThat(orderResponseDto.getStatus()).isEqualTo(order.getOrderStatus());
+        assertThat(orderResponseDto.getTotalAmount()).isEqualTo(order.getTotalAmount());
     }
 
 }

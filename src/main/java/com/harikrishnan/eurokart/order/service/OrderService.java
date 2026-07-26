@@ -13,9 +13,16 @@ import com.harikrishnan.eurokart.product.repository.ProductRepository;
 import com.harikrishnan.eurokart.user.domain.User;
 import com.harikrishnan.eurokart.util.NotificationService;
 import com.harikrishnan.eurokart.util.SecurityUtils;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -155,6 +162,41 @@ public class OrderService {
                 .updatedAt(LocalDateTime.now())
                 .message("Order status updated to " + order.getOrderStatus())
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<OrderResponseDto> getOrders (Pageable pageable, OrderRequestFilterDto orderRequestFilterDto) {
+        log.info("Initiated service method to get orders in the page: {}",pageable.getPageNumber());
+
+        User user = securityUtils.getCurrentUser();
+
+
+        Specification<Order> specification = (root, query, cb) -> cb.equal(root.get("user"),user);
+
+        if(orderRequestFilterDto.getOrderStatus() != null) {
+            specification = specification.and((root,query, cb) -> cb.equal(root.get("orderStatus"), orderRequestFilterDto.getOrderStatus()));
+        }
+
+        if(orderRequestFilterDto.getFromDate() != null) {
+            specification = specification.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("createdAt"),orderRequestFilterDto.getFromDate()));
+        }
+
+        if(orderRequestFilterDto.getToDate() != null) {
+            specification = specification.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("createdAt"),orderRequestFilterDto.getToDate()));
+        }
+
+        Page<Order> ordersPage = orderRepository.findAll(specification,pageable);
+
+        List<OrderResponseDto> orderResponseDtos =  ordersPage.stream().map(order -> OrderResponseDto.builder()
+                .id(order.getId())
+                .userId(order.getUser().getId())
+                .status(order.getOrderStatus())
+                .totalAmount(order.getTotalAmount())
+                .createdAt(order.getCreatedAt())
+                .updatedAt(order.getUpdatedAt())
+                .build()).toList();
+
+        return new PageImpl<>(orderResponseDtos, pageable,ordersPage.getTotalElements());
     }
 
 
