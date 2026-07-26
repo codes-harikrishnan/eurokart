@@ -2,7 +2,7 @@
 
 A production-quality e-commerce REST API built with Java Spring Boot, demonstrating senior-level backend engineering practices including domain-driven design, JWT authentication, Redis caching, async processing, and comprehensive test coverage.
 
-**Live Demo:** _[Add Render URL after deployment]_  
+**Live Demo:** https://eurokart.onrender.com 
 **GitHub:** https://github.com/codes-harikrishnan/eurokart
 
 ---
